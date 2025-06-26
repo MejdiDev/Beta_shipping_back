@@ -17,7 +17,7 @@ const notificationSchema = new Schema({
     referenceModel: {
         type: String,
         required: true,
-        enum: ['Quote', 'Shipment', 'offer'],  // Enum ensures that only 'User' or 'Product' can be used
+        enum: ['Quote', 'Shipment', 'offer', 'Document'],  // Enum ensures that only 'User' or 'Product' can be used
     },
 
     content: {

@@ -17,67 +17,38 @@ const locationUpdateSchema = new mongoose.Schema({
 });
 
 const shipmentSchema = new mongoose.Schema({
-    userId: {
+    clientId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'users',
         required: true
     },
-    origin: {
-        type: String,
-        required: true
-    },
-    destination: {
-        type: String,
-        required: true
-    },
-    weight: {
-        type: Number,
-        required: true
-    },
-    volume: {
-        type: Number,
-        required: true
-    },
-    dimensions: {
-        height: { type: Number, required: true },
-        width: { type: Number, required: true },
-        length: { type: Number, required: true }
-    },
-    container : {
-        type: String,
-        enum: ['20ft standard','40ft standard', '40ft high cube'],
-        
-    },
-    incoterm: {
-        type: String,
-        enum: ['fob', 'fca', 'exwork', 'cif'],
-        required: true
-    },
-    mode: {
-        type: String,
-        enum: ['fcl', 'lcl', 'air', 'road'],
-        required: true
-    },
-        serviceLevel : {
-        type: String,
-        enum: ['standard', 'express', 'premium']
+
+    // Either the shipment is created by accepting an offer (All data is in the quoteRequest)
+    quoteRequestId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Quote'
     },
 
-        reqDelivery: {
+    // Or it's created directly (We create a detail and mention the shipmentType)
+    detailsId: {
+        type: mongoose.Schema.Types.ObjectId,
+        refPath: 'shipmentType'
+    },
+
+    shipmentType: {
+        type: String,
+        enum: ['fcl', 'lcl', 'air']
+    },
+
+    createdAt: {
         type: Date,
-
+        default: Date.now
     },
-    readyDate: {
-        type: Date,
 
-    },
-    estimateddeparture: {
-        type: Date,
-
-    },
-    estimateddeliverye: {
-        type: Date,
-
+    status: {
+        type: String, 
+        enum: ['created', 'in transit', 'delivered', 'delayed'],
+        default: 'created' 
     }
 }, { timestamps: true });
 

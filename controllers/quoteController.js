@@ -4,62 +4,52 @@ const User = require("../models/usersSchema");
 const mongoose = require("mongoose");
 const { notifyAllWithRole } = require("./notificationController");
 
+const FCL = require("../models/quotes/FCLDetails");
+const LCL = require("../models/quotes/LCLDetails");
+const AIR = require("../models/quotes/AIRDetails");
+
 // Request a quote (Client)
 exports.requestQuote = async (req, res) => {
   try {
-    const {
-      userId,
-      origin,
-      destination,
-      weight,
-      volume,
-      height,
-      width,
-      length,
-      mode,
-      containerType,
-      incoterm,
-      serviceLevel,
-      reqDelivery,
-      readyDate,
-    } = req.body;
+    const { shipDetails, shipmentMode } = req.body;
+    
+    const shipmentModel = mongoose.model( shipmentMode.toLowerCase() );
+    const shipmentDetailsInstance = new shipmentModel( shipDetails );
+    
+    const resShipmentDetails = await shipmentDetailsInstance.save();
 
+    // Create the quote and store just the shipmentMode and the detailsId
     const quote = new Quote({
-      userId,
-      origin,
-      destination,
-      weight,
-      volume,
-      dimensions: { height, width, length },
-      containerType: containerType.toLowerCase(),
-
-      mode: mode.toLowerCase(),
-      incoterm: incoterm.toLowerCase(),
-      serviceLevel: serviceLevel.toLowerCase(),
-      reqDelivery,
-      readyDate,
+      clientId: shipDetails.clientId,
+      shipmentType: shipmentMode.toLowerCase(),
+      detailsId: resShipmentDetails._id,
     });
 
+    // Save the quote document
     const resQuote = await quote.save();
 
+    // Notify all sales agents of the new quote request
     notifyAllWithRole({
       notifData: {
         contentId: resQuote._id,
         referenceModel: "Quote",
-        content: "A new Quote Request has been added !"
+        content: "A new Quote Request has been added !",
       },
+      role: "salesAgent",
+    });
 
-      role: "salesAgent"
-    })
-
+    // Send success response
     res.status(201).json({
       message: "Quote requested successfully",
-      quote,
+      quote: resQuote,
     });
   } catch (error) {
+    console.error("Error in requesting quote:", error); // Log the error for better debugging
+
+    // Return error response with the specific message
     res.status(500).json({
       message: "Error requesting quote",
-      error: error.message,
+      error: error.message || "An unexpected error occurred",
     });
   }
 };
@@ -67,10 +57,11 @@ exports.requestQuote = async (req, res) => {
 // Get client's quotes (Client)
 exports.getClientQuotes = async (req, res) => {
   try {
-    console.log("Client ID:", req.userId);
     const quotes = await Quote.find({
-      clientId: req.userId,
-    }).sort({ createdAt: 1 });
+      clientId: req.query.userId,
+    })
+    .populate('detailsId')
+    .sort({ createdAt: 1 });
 
     res.status(200).json(quotes);
   } catch (error) {

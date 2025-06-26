@@ -6,9 +6,11 @@ const { requireAuthUser, hasRole } = require("../middlewares/auth.js");
 
 router.get("/getMyProfile", requireAuthUser, hasRole('admin'), adminController.getProfile); // get profile
 router.put("/updateMyProfile", requireAuthUser, hasRole('admin'), adminController.updateProfile); // update profile
-router.delete("/deleteUser/:id", requireAuthUser, hasRole('admin'), adminController.deleteUser); // delete user
+router.delete("/deleteUserProfile/:id", requireAuthUser, hasRole('admin'), adminController.deleteUser); // delete user
 
 router.get("/getAllUsers", requireAuthUser, hasRole('admin'), adminController.getAllUsers); // get all users
+router.put('/updateUserProfile', requireAuthUser, hasRole('admin'), adminController.updateProfile);
+
 router.get("/user/:id", requireAuthUser, hasRole('admin'), adminController.getUserById); // get user by ID
 router.put("/user/:id/reset-password", requireAuthUser, hasRole('admin'), adminController.resetUserPassword); // reset user password
 

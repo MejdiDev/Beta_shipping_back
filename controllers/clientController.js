@@ -19,7 +19,7 @@ module.exports.getProfile = async (req, res) => {
 module.exports.updateProfile = async (req, res) => {
   try {
     const { name, last, email, phone } = req.body;
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -108,12 +108,19 @@ module.exports.getClientQuotes = async (req, res) => {
 // Get shipments for a user with status and history
 module.exports.getShipments = async (req, res) => {
     try {
-        const shipments = await Shipment.find({ userId: req.query.userId })
-
-        res.status(200).json({
-            message: 'Client shipments retrieved successfully',
-            shipments
+      const shipments = await Shipment
+        .find({ clientId: req.query.userId })
+        .populate({
+            path: 'quoteRequestId',
+            populate: {
+                path: 'detailsId'
+            },
         });
+
+      res.status(200).json({
+          message: 'Client shipments retrieved successfully',
+          shipments
+      });
     } catch (error) {
         res.status(500).json({ message: "Server error", error: error.message });
     }

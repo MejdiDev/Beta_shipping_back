@@ -24,6 +24,8 @@ router.delete('/shipments/:id', requireAuthUser, hasRole('operationalOfficer'), 
 // Get all quotes
 router.get('/quotes', requireAuthUser, hasRole('operationalOfficer'), operationalOfficerController.getAllQuotes);
 
+router.get('/clients', requireAuthUser, hasRole('operationalOfficer'), operationalOfficerController.getAllClients);
+
 router.use('/task', taskRouter);
 
 // Upload document

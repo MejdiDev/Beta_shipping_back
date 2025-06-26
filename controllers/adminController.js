@@ -23,25 +23,52 @@ module.exports.getProfile = async (req, res) => {
 // Update admin profile
 module.exports.updateProfile = async (req, res) => {
     try {
-        const { name, last, email, phone } = req.body;
-
-        const admin = await User.findById(req.user._id);
+        const admin = await User.findByIdAndUpdate(req.body._id, req.body);
         if (!admin) {
             return res.status(404).json({ message: 'Admin not found' });
         }
-
-        // Update fields
-        if (name) admin.name = name;
-        if (last) admin.last = last;
-        if (email) admin.email = email;
-        if (phone) admin.phone = phone;
-
+        
         await admin.save();
         res.status(200).json({ message: 'Profile updated successfully', admin });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
+
+module.exports.updateUserProfile = async (req, res) => {
+    try {
+        const { name, last, email, phone } = req.body;
+
+        const user = await User.findById(req.userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Update fields
+        if (name) user.name = name;
+        if (last) user.last = last;
+        if (email) user.email = email;
+        if (phone) user.phone = phone;
+
+        await user.save();
+        res.status(200).json({ message: 'Profile updated successfully', user });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+module.exports.deleteUserProfile = async (req, res) => {
+    try {
+        const user = await User.findByIdAndDelete(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.status(200).json({ message: 'User deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting task', error: error.message });
+    }
+};
+
 module.exports.updatePassword = async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;

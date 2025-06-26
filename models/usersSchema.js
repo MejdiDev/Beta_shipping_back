@@ -34,7 +34,6 @@ const usersSchema = new mongoose.Schema(
         "client",
         "salesAgent",
         "manager",
-        "financialOfficer",
         "operationalOfficer",
       ],
       default: "client",

@@ -85,7 +85,8 @@ module.exports.getAllClients = async (req, res) => {
 // Get all quotes
 module.exports.getAllQuotes = async (req, res) => {
     try {
-        const quotes = await Quote.find();
+        const quotes = await Quote.find().populate('detailsId');
+
         res.status(200).json(quotes);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -96,7 +97,7 @@ module.exports.getAllQuotes = async (req, res) => {
 exports.getClientQuotes = async (req, res) => {
   try {
     const { id } = req.params;
-    const quote = await Quote.findById(id);
+    const quote = await Quote.findById(id).populate('detailsId');
 
     res.status(200).json(quote);
   } catch (error) {
@@ -111,7 +112,7 @@ exports.getClientQuotes = async (req, res) => {
 module.exports.approveQuote = async (req, res) => {
     try {
         const { id } = req.params;
-        const quote = await Quote.findById(id);
+        const quote = await Quote.findById(id).populate('detailsId');
         if (!quote) {
             return res.status(404).json({ message: 'Quote not found' });
         }

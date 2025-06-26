@@ -61,13 +61,8 @@ exports.createShipment = async (req, res) => {
         }
 
         const shipment = new Shipment({
-            ...req.body,
-            _id: undefined,
-            userId: req.body.clientId,
-
-            incoterm: req.body.incoterm.toLowerCase(),
-            mode: req.body.mode.toLowerCase(),
-            serviceLevel: req.body.serviceLevel.toLowerCase(),
+            clientId: req.body.clientId,
+            quoteRequestId: req.body._id
         });
 
         const resShip = await shipment.save();

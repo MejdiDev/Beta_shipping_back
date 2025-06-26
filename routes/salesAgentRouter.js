@@ -18,7 +18,7 @@ router.delete('/leads/:id', requireAuthUser, hasRole('salesAgent'), salesAgentCo
 
 // Task routes
 router.use('/task', taskRouter);
-router.get('/getAllWithRole', requireAuthUser, hasRole('salesAgent'), usersController.getAllActors);
+router.get('/getAllWithRole', requireAuthUser, hasRole('salesAgent', 'operationalOfficer'), usersController.getAllActors);
 
 
 // Notification routes

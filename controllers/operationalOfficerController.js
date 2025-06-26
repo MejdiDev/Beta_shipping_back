@@ -3,16 +3,29 @@ const Quote = require('../models/quoteSchema');
 
 const Document = require('../models/documentSchema');
 const UploadFile = require('../middlewares/uploadFile'); // Corrected import
-const Invoice = require('../models/invoiceSchema');
 const User = require('../models/usersSchema'); // Added missing User model import
+
+const mongoose = require("mongoose");
+const { notifyUser } = require('./notificationController');
 
 // Get all shipments
 module.exports.getAllShipments = async (req, res) => {
     try {
-        const shipments = await Shipment.find();
-        res.status(200).json(shipments);
+        const resHaveQuote = await Shipment.find({ quoteRequestId: { $exists: true } }).populate({
+            path: 'quoteRequestId',
+            populate: {
+                path: 'detailsId'
+            },
+        })
+
+        const resHaveDetails = await Shipment.find({ detailsId: { $exists: true } }).populate('detailsId')
+
+        res.status(200).json({
+            message: 'Client shipments retrieved successfully',
+            shipments: resHaveQuote.concat(resHaveDetails)
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 
@@ -41,20 +54,23 @@ module.exports.getShipmentById = async (req, res) => {
 // Create a new shipment
 module.exports.createShipment = async (req, res) => {
     try {
-        const { origin, destination, weight, dimensions, description, clientId: userId } = req.body;
-
+        const { shipDetails, shipmentType } = req.body;
+            
+        const shipmentModel = mongoose.model( shipmentType.toLowerCase() );
+        const shipmentDetailsInstance = new shipmentModel( shipDetails );
+        
+        const resShipmentDetails = await shipmentDetailsInstance.save();
+        
+        // Create the quote and store just the shipmentMode and the detailsId
         const shipment = new Shipment({
-            origin,
-            destination,
-            weight,
-            dimensions,
-            description,
-            clientId: userId,
-            status: 'pending'
+            clientId: shipDetails.clientId,
+            shipmentType: shipmentType.toLowerCase(),
+            detailsId: resShipmentDetails._id,
         });
-
-        await shipment.save();
-        res.status(201).json({ message: 'Shipment created successfully', shipment });
+    
+        // Save the quote document
+        const resShip = await shipment.save();
+        res.status(201).json({ message: 'Shipment created successfully', shipment: resShip });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -113,7 +129,7 @@ module.exports.uploadDocument = async (req, res) => {
                 return res.status(500).json({ message: 'File upload error', error: err.message });
             }
 
-            const { shipmentId, description } = req.body;
+            const { shipmentId, clientId, description } = req.body;
 
             if (!req.file) {
                 return res.status(400).json({ message: 'No file uploaded' });
@@ -127,6 +143,14 @@ module.exports.uploadDocument = async (req, res) => {
             });
 
             await document.save();
+
+            notifyUser({
+                userId: clientId,
+                contentId: shipmentId,
+                referenceModel: "Document",
+                content: "A document was added to your shipment !"
+            });
+
             res.status(201).json({ message: 'Document uploaded successfully', document });
         });
     } catch (error) {
@@ -138,7 +162,10 @@ module.exports.uploadDocument = async (req, res) => {
 // Get all quotes
 module.exports.getAllQuotes = async (req, res) => {
     try {
-        const quotes = await Quote.find();
+        const quotes = await Quote
+        .find()
+        .populate('detailsId');
+
         res.status(200).json(quotes);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });

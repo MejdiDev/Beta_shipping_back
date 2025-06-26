@@ -10,10 +10,10 @@ exports.createOffer = async (req, res) => {
         const resOffer = await offer.save();
         
         const { quoteId } = req.body
-        const userId = await Quote.findById(quoteId).select('userId');
+        const { clientId } = await Quote.findById(quoteId).select('clientId');
 
         notifyUser({
-            userId: userId.userId,
+            userId: clientId,
             contentId: resOffer._id,
             referenceModel: "offer",
             content: "You have an offer for your Quote !"
@@ -79,7 +79,12 @@ exports.getAllOffers = async (req, res) => {
 exports.getOfferById = async (req, res) => {
     try {
         const offer = await Offer.findById(req.params.id)
-            .populate('quoteId');
+            .populate({
+                path: 'quoteId',
+                populate: {
+                    path: 'detailsId'
+                },
+            });
 
         if (!offer) {
             return res.status(404).json({ message: 'Offer not found' });
