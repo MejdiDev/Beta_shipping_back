@@ -108,18 +108,18 @@ module.exports.getClientQuotes = async (req, res) => {
 // Get shipments for a user with status and history
 module.exports.getShipments = async (req, res) => {
     try {
-      const shipments = await Shipment
-        .find({ clientId: req.query.userId })
-        .populate({
-            path: 'quoteRequestId',
-            populate: {
-                path: 'detailsId'
-            },
-        });
+      const resHaveQuote = await Shipment.find({ quoteRequestId: { $exists: true } }).populate({
+          path: 'quoteRequestId',
+          populate: {
+              path: 'detailsId'
+          },
+      })
+
+      const resHaveDetails = await Shipment.find({ detailsId: { $exists: true } }).populate('detailsId')
 
       res.status(200).json({
           message: 'Client shipments retrieved successfully',
-          shipments
+          shipments: resHaveQuote.concat(resHaveDetails)
       });
     } catch (error) {
         res.status(500).json({ message: "Server error", error: error.message });
