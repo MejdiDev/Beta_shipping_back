@@ -4,7 +4,7 @@ const User = require('../models/usersSchema');
 const fs = require('fs').promises;
 const path = require('path');
 const { isAdmin, isFinancialOfficer, isOperationalOfficer,isClient } = require('../middlewares/auth');
-const { notifyUser } = require('./notificationController');
+const { notifyUser, notifyAllWithRole } = require('./notificationController');
 
 // Upload document (Client, Financial Officer, Operational Officer)
 module.exports.uploadDocument = async (req, res) => {
@@ -44,14 +44,23 @@ module.exports.uploadDocument = async (req, res) => {
             uploadedBy: req.user._id
         });
 
-        await document.save();
+        const resDoc = await document.save();
 
         notifyUser({
             userId: clientId,
-            contentId: shipmentId,
+            contentId: resDoc._id,
             referenceModel: "Document",
             content: "A document was added to your shipment !"
         });
+
+        notifyAllWithRole({
+            notifData: {
+                contentId: resDoc._id,
+                referenceModel: "Document",
+                content: "A new document was added !",
+            },
+            role: "operationalOfficer",
+        })
 
         res.status(201).json({
             message: 'Document uploaded successfully',
