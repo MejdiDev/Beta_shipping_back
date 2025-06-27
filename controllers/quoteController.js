@@ -61,7 +61,7 @@ exports.getClientQuotes = async (req, res) => {
       clientId: req.query.userId,
     })
     .populate('detailsId')
-    .sort({ createdAt: 1 });
+    .sort({ createdAt: -1 });
 
     res.status(200).json(quotes);
   } catch (error) {

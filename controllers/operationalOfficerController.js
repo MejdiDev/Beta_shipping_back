@@ -70,6 +70,14 @@ module.exports.createShipment = async (req, res) => {
     
         // Save the quote document
         const resShip = await shipment.save();
+
+        notifyUser({
+            userId: shipDetails.clientId,
+            contentId: resShip._id,
+            referenceModel: "Shipment",
+            content: "You have a new shipment !"
+        });
+
         res.status(201).json({ message: 'Shipment created successfully', shipment: resShip });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -79,24 +87,23 @@ module.exports.createShipment = async (req, res) => {
 // Update shipment
 module.exports.updateShipment = async (req, res) => {
     try {
-        const { origin, destination, weight, dimensions, description, status } = req.body;
-        const shipmentId = req.params.id;
+        console.log("--------------------------")
 
-        const shipment = await Shipment.findById(shipmentId);
+        const shipDetails = req.body;
+        
+        const shipment = await Shipment.findById(req.params.id);
         if (!shipment) {
             return res.status(404).json({ message: 'Shipment not found' });
         }
 
-        // Update fields
-        if (origin) shipment.origin = origin;
-        if (destination) shipment.destination = destination;
-        if (weight) shipment.weight = weight;
-        if (dimensions) shipment.dimensions = dimensions;
-        if (description) shipment.description = description;
-        if (status) shipment.status = status;
+        const shipmentModel = mongoose.model( shipDetails.shipmentType.toLowerCase() );
+        const detailsRec = await shipmentModel.findByIdAndUpdate(
+            shipDetails.detailsId,
+            req.body,
+            { new: true }
+        );
 
-        await shipment.save();
-        res.status(200).json({ message: 'Shipment updated successfully', shipment });
+        res.status(200).json({ message: 'Shipment updated successfully', details: detailsRec });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -113,6 +120,14 @@ module.exports.deleteShipment = async (req, res) => {
         }
 
         await shipment.deleteOne();
+
+        notifyUser({
+            userId: shipment.clientId,
+            contentId: shipment._id,
+            referenceModel: "Shipment",
+            content: "Your shipment was deleted !"
+        });
+
         res.status(200).json({ message: 'Shipment deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });

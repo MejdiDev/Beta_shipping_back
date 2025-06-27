@@ -19,13 +19,11 @@ exports.createOffer = async (req, res) => {
             content: "You have an offer for your Quote !"
         });
 
-        // Add the offer to the sales agent's offers array
-        // const salesAgent = await User.findById(req.body.salesAgent);
-
-        // if (salesAgent) {
-        //     salesAgent.offers.push(offer._id);
-        //     await salesAgent.save();
-        // }
+        await Quote.findByIdAndUpdate(
+            quoteId,
+            { status: 'quoted' },
+            { new: true }
+        );
 
         res.status(201).json({ message: 'Offer created successfully', offer });
     } catch (error) {

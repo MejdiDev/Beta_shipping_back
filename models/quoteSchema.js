@@ -31,7 +31,7 @@ const quoteSchema = new mongoose.Schema({
     
     status: {
         type: String,
-        enum: ['pending', 'under review', 'quoted', 'accepted', 'rejected'],
+        enum: ['pending', 'quoted', 'rejected'],
         default: 'pending'
     },
 });
