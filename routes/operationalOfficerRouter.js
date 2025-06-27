@@ -5,6 +5,7 @@ const { requireAuthUser, hasRole } = require('../middlewares/auth');
 const uploadFile = require('../middlewares/uploadFile');
 
 var taskRouter = require("../routes/taskRouter");
+const notifController = require('../controllers/notificationController');
 
 // Get all shipments
 router.get('/shipments', requireAuthUser, hasRole('operationalOfficer'), operationalOfficerController.getAllShipments);
@@ -27,6 +28,9 @@ router.get('/quotes', requireAuthUser, hasRole('operationalOfficer'), operationa
 router.get('/clients', requireAuthUser, hasRole('operationalOfficer'), operationalOfficerController.getAllClients);
 
 router.use('/task', taskRouter);
+
+// Notification routes
+router.get('/notif', requireAuthUser, hasRole('operationalOfficer'), notifController.getAllNotifs);
 
 // Upload document
 router.post('/documents', requireAuthUser, hasRole('operationalOfficer'), uploadFile.single('document'), operationalOfficerController.uploadDocument);

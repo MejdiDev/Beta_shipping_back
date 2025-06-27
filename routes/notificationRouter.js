@@ -8,7 +8,7 @@ router.post('/', requireAuthUser, hasRole('client'), notifController.createNotif
 router.get('/', requireAuthUser, hasRole('client'), notifController.getAllNotifs);
 router.get('/:id', requireAuthUser, hasRole('client'), notifController.getNotifById);
 
-router.put('/', requireAuthUser, hasRole('client', 'salesAgent'), notifController.markNotifAsRead);
-router.get('/check/new', requireAuthUser, hasRole('client', 'salesAgent'), notifController.getNewNotifs);
+router.put('/', requireAuthUser, hasRole('client', 'salesAgent', 'operationalOfficer'), notifController.markNotifAsRead);
+router.get('/check/new', requireAuthUser, hasRole('client', 'salesAgent', 'operationalOfficer'), notifController.getNewNotifs);
 
 module.exports = router;

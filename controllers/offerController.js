@@ -1,6 +1,6 @@
 const Offer = require('../models/offerSchema');
 const Quote = require('../models/quoteSchema');
-const { notifyUser } = require('./notificationController');
+const { notifyUser, notifyAllWithRole } = require('./notificationController');
 const { createShipment } = require('./shipmentController');
 
 // Create a new offer

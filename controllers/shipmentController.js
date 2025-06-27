@@ -1,6 +1,6 @@
 const Shipment = require('../models/shipmentSchema');
 const User = require('../models/usersSchema');
-const { notifyUser } = require('./notificationController');({});
+const { notifyUser, notifyAllWithRole } = require('./notificationController');({});
 
 // Get all shipments (Admin, Financial Officer, Operational Officer)
 exports.getAllShipments = async (req, res) => {
@@ -72,6 +72,15 @@ exports.createShipment = async (req, res) => {
             contentId: resShip._id,
             referenceModel: "Shipment",
             content: "Your shipment was added !"
+        });
+
+        notifyAllWithRole({
+            notifData: {
+                contentId: resShip._id,
+                referenceModel: "Shipment",
+                content: "A new Shipment has been added !",
+            },
+            role: "operationalOfficer",
         });
 
         res.status(201).json({
