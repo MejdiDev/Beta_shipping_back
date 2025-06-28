@@ -41,11 +41,30 @@ module.exports.getAllClients = async (req, res) => {
 // Get shipment by ID
 module.exports.getShipmentById = async (req, res) => {
     try {
-        const shipment = await Shipment.findById(req.params.id);
+        const shipment = await Shipment.findOne({ _id: req.params.id })
+        let resShip;
+
         if (!shipment) {
             return res.status(404).json({ message: 'Shipment not found' });
         }
-        res.status(200).json(shipment);
+
+        if(shipment.quoteRequestId) {
+            resShip = await Shipment.findOne({ _id: req.params.id, quoteRequestId: { $exists: true } }).populate({
+                path: 'quoteRequestId',
+                populate: {
+                    path: 'detailsId'
+                },
+            })
+        }
+
+        else if(shipment.detailsId) {
+            resShip = await Shipment.findOne({ _id: req.params.id, detailsId: { $exists: true } }).populate('detailsId')
+        }
+
+        res.status(200).json({
+            message: 'Shipment retrieved successfully',
+            shipment: resShip
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -87,8 +106,6 @@ module.exports.createShipment = async (req, res) => {
 // Update shipment
 module.exports.updateShipment = async (req, res) => {
     try {
-        console.log("--------------------------")
-
         const shipDetails = req.body;
         
         const shipment = await Shipment.findById(req.params.id);
@@ -102,6 +119,19 @@ module.exports.updateShipment = async (req, res) => {
             req.body,
             { new: true }
         );
+
+        await Shipment.findByIdAndUpdate(
+            req.params.id,
+            { status: req.body.status },
+            { new: true }
+        );
+
+        notifyUser({
+            userId: req.body.clientId,
+            contentId: req.params.id,
+            referenceModel: "Shipment",
+            content: "Your shipment was edited !"
+        });
 
         res.status(200).json({ message: 'Shipment updated successfully', details: detailsRec });
     } catch (error) {

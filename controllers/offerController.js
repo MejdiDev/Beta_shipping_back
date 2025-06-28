@@ -9,19 +9,19 @@ exports.createOffer = async (req, res) => {
         const offer = new Offer(req.body);
         const resOffer = await offer.save();
         
-        const { quoteId } = req.body
+        const { quoteId, quoteStatus } = req.body
         const { clientId } = await Quote.findById(quoteId).select('clientId');
 
         notifyUser({
             userId: clientId,
             contentId: resOffer._id,
             referenceModel: "offer",
-            content: "You have an offer for your Quote !"
+            content: ( quoteStatus === 'accepted' ? "You have an offer for your Quote !" : "Your offer was declined !" )
         });
 
         await Quote.findByIdAndUpdate(
             quoteId,
-            { status: 'quoted' },
+            { status: ( quoteStatus === 'accepted' ? 'quoted' : 'rejected' ) },
             { new: true }
         );
 
@@ -47,6 +47,24 @@ exports.acceptOffer = async (req, res) => {
     });
 
     createShipment(req, res)
+}
+
+// Reject existing offer
+exports.rejectOffer = async (req, res) => {
+    await Offer.findByIdAndUpdate(
+        req.body.offerId,
+        { result: 'rejected' },
+        { new: true }
+    );
+
+    notifyUser({
+        userId: req.body.clientId,
+        contentId: req.body.offerId,
+        referenceModel: "offer",
+        content: "You rejected our offer !"
+    });
+
+    res.status(201).json({ message: "Offer was rejected !" })
 }
 
 // Check if there was an offer added for this quote

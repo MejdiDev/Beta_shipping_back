@@ -105,6 +105,14 @@ module.exports.getClientQuotes = async (req, res) => {
     }
 };
 
+module.exports.getClientQuoteById = async (req, res) => {
+    try {
+        quoteController.getQuoteById(req, res);
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
 // Get shipments for a user with status and history
 module.exports.getShipments = async (req, res) => {
     try {
@@ -124,6 +132,38 @@ module.exports.getShipments = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: "Server error", error: error.message });
     }
+};
+
+module.exports.getShipmentById = async (req, res) => {
+  try {
+    const shipment = await Shipment.findOne({ _id: req.params.id });
+    let resShip;
+
+    if (!shipment) {
+        return res.status(404).json({ message: 'Shipment not found' });
+    }
+
+    if(shipment.quoteRequestId) {
+        resShip = await Shipment.findOne({ _id: req.params.id, quoteRequestId: { $exists: true } }).populate({
+            path: 'quoteRequestId',
+            populate: {
+                path: 'detailsId'
+            },
+        })
+    }
+
+    else if(shipment.detailsId) {
+      resShip = await Shipment.findOne({ _id: req.params.id, detailsId: { $exists: true } }).populate('detailsId')
+    }
+
+    res.status(200).json({
+        message: 'Client shipment retrieved successfully',
+        shipment: resShip
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 };
 
 // Get invoices for a user

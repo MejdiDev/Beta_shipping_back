@@ -11,10 +11,15 @@ const offerSchema = new mongoose.Schema({
         ref: 'users',
         required: true
     },
+
     amount: {
-        type: Number,
-        required: true
+        type: Number
     },
+
+    declineReason: {
+        type: String
+    },
+
     result: {
         type: String,
         enum: ['pending', 'accepted', 'rejected'],

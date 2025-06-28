@@ -75,10 +75,7 @@ exports.getClientQuotes = async (req, res) => {
 // Get quote by ID (Client)
 exports.getQuoteById = async (req, res) => {
   try {
-    const quote = await Quote.findOne({
-      _id: req.params.id,
-      clientId: req.user._id,
-    });
+    const quote = await Quote.findById(req.params.id).populate('detailsId');
 
     if (!quote) {
       return res.status(404).json({ message: "Quote not found" });

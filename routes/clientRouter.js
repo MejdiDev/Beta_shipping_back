@@ -17,14 +17,16 @@ router.put('/updatePassword', requireAuthUser, hasRole('client'), clientControll
 // Quotes
 router.post('/requestQuote', requireAuthUser, hasRole('client'), clientController.requestQuote);
 router.get('/getClientQuotes', requireAuthUser, hasRole('client'), clientController.getClientQuotes);
+router.get('/getClientQuote/:id', requireAuthUser, hasRole('client'), clientController.getClientQuoteById);
 
 // Offer
 router.post('/offer/accept', requireAuthUser, hasRole('client'), offerController.acceptOffer);
+router.post('/offer/reject', requireAuthUser, hasRole('client'), offerController.rejectOffer);
 router.get('/offer/:id', requireAuthUser, hasRole('client'), offerController.getOfferById);
 
 // Shipments
 router.get('/getShipments', requireAuthUser, hasRole('client'), clientController.getShipments);
-router.get('/shipments/:id/details', requireAuthUser, hasRole('client'), clientController.getDocuments);
+router.get('/shipments/:id/details', requireAuthUser, hasRole('client'), clientController.getShipmentById);
 
 // Notification routes
 router.get('/notif', requireAuthUser, hasRole('client'), notifController.getAllNotifs);
