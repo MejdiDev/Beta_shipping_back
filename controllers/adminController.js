@@ -4,9 +4,14 @@ const User = require('../models/usersSchema');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { isAdmin } = require('../middlewares/auth');
+
 const Shipment = require('../models/shipmentSchema');
 const Quote = require('../models/quoteSchema');
-const document = require  ('../models/documentSchema')
+const Offer = require('../models/offerSchema');
+
+const document = require  ('../models/documentSchema');
+const { notifyUser } = require('./notificationController');
+const { default: mongoose } = require('mongoose');
 // Get admin profile
 module.exports.getProfile = async (req, res) => {
     try {
@@ -195,60 +200,255 @@ exports.resetUserPassword = async (req, res) => {
     }
 };
 
-// update password
-
-
-// View all shipments
+// Get all shipments
 module.exports.getAllShipments = async (req, res) => {
     try {
-        const shipments = await Shipment.find();
-        res.status(200).json(shipments);
+        const resHaveQuote = await Shipment.find({ quoteRequestId: { $exists: true } }).populate({
+            path: 'quoteRequestId',
+            populate: {
+                path: 'detailsId'
+            },
+        })
+
+        const resHaveDetails = await Shipment.find({ detailsId: { $exists: true } }).populate('detailsId')
+
+        res.status(200).json({
+            message: 'Shipments retrieved successfully',
+            shipments: resHaveQuote.concat(resHaveDetails)
+        });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+module.exports.getAllClients = async (req, res) => {
+    try {
+        const clients = await User.find({ role: 'client' }).select('-password');
+        res.status(200).json(clients);
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Get shipment by ID
+module.exports.getShipmentById = async (req, res) => {
+    try {
+        const shipment = await Shipment.findOne({ _id: req.params.id })
+        let resShip;
+
+        if (!shipment) {
+            return res.status(404).json({ message: 'Shipment not found' });
+        }
+
+        if(shipment.quoteRequestId) {
+            resShip = await Shipment.findOne({ _id: req.params.id, quoteRequestId: { $exists: true } }).populate({
+                path: 'quoteRequestId',
+                populate: {
+                    path: 'detailsId'
+                },
+            })
+        }
+
+        else if(shipment.detailsId) {
+            resShip = await Shipment.findOne({ _id: req.params.id, detailsId: { $exists: true } }).populate('detailsId')
+        }
+
+        res.status(200).json({
+            message: 'Shipment retrieved successfully',
+            shipment: resShip
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
-// View shipment by ID
-module.exports.getShipmentById = async (req, res) => {
+// Create a new shipment
+module.exports.createShipment = async (req, res) => {
     try {
+        const { shipDetails, shipmentType } = req.body;
+            
+        const shipmentModel = mongoose.model( shipmentType.toLowerCase() );
+        const shipmentDetailsInstance = new shipmentModel( shipDetails );
+        
+        const resShipmentDetails = await shipmentDetailsInstance.save();
+        
+        // Create the quote and store just the shipmentMode and the detailsId
+        const shipment = new Shipment({
+            clientId: shipDetails.clientId,
+            shipmentType: shipmentType.toLowerCase(),
+            detailsId: resShipmentDetails._id,
+        });
+    
+        // Save the quote document
+        const resShip = await shipment.save();
+
+        notifyUser({
+            userId: shipDetails.clientId,
+            contentId: resShip._id,
+            referenceModel: "Shipment",
+            content: "You have a new shipment !"
+        });
+
+        res.status(201).json({ message: 'Shipment created successfully', shipment: resShip });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Update shipment
+module.exports.updateShipment = async (req, res) => {
+    try {
+        const shipDetails = req.body;
+        
         const shipment = await Shipment.findById(req.params.id);
         if (!shipment) {
             return res.status(404).json({ message: 'Shipment not found' });
         }
-        res.status(200).json(shipment);
+
+        const shipmentModel = mongoose.model( shipDetails.shipmentType.toLowerCase() );
+        const detailsRec = await shipmentModel.findByIdAndUpdate(
+            shipDetails.detailsId,
+            req.body,
+            { new: true }
+        );
+
+        await Shipment.findByIdAndUpdate(
+            req.params.id,
+            { status: req.body.status },
+            { new: true }
+        );
+
+        notifyUser({
+            userId: req.body.clientId,
+            contentId: req.params.id,
+            referenceModel: "Shipment",
+            content: "Your shipment was edited !"
+        });
+
+        res.status(200).json({ message: 'Shipment updated successfully', details: detailsRec });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
-// View pending shipments
-module.exports.getPendingShipments = async (req, res) => {
+// Delete shipment
+module.exports.deleteShipment = async (req, res) => {
     try {
-        const pendingShipments = await Shipment.find({ status: 'pending' });
-        res.status(200).json(pendingShipments);
+        const shipmentId = req.params.id;
+
+        const shipment = await Shipment.findById(shipmentId);
+        if (!shipment) {
+            return res.status(404).json({ message: 'Shipment not found' });
+        }
+
+        await shipment.deleteOne();
+
+        notifyUser({
+            userId: shipment.clientId,
+            contentId: shipment._id,
+            referenceModel: "Shipment",
+            content: "Your shipment was deleted !"
+        });
+
+        res.status(200).json({ message: 'Shipment deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 
-// View all quotes
+// Get all quotes
 module.exports.getAllQuotes = async (req, res) => {
     try {
-        const quotes = await Quote.find();
+        const quotes = await Quote
+        .find()
+        .populate('detailsId');
+
         res.status(200).json(quotes);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
-//get quote by id 
 
+// Get quote by ID
 module.exports.getQuoteById = async (req, res) => {
     try {
+        let quote;
+        let offer = await Offer.findOne({ quoteId: req.params.id })
+            
+        if(offer) {
+            quote = await Offer.findOne({ quoteId: req.params.id })
+                .populate({
+                    path: 'quoteId',
+                    populate: {
+                        path: 'detailsId'
+                    },
+                });
+        }
+
+        else {
+            quote = await Quote.findById(req.params.id).populate('detailsId')
+        }
+
+        if (!quote) {
+            return res.status(404).json({ message: "Quote not found" });
+        }
+
+        res.status(200).json(quote);
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving quote",
+      error: error.message,
+    });
+  }
+};
+
+module.exports.updateQuote = async (req, res) => {
+    try {
+        const quoteDetails = req.body;
+        
         const quote = await Quote.findById(req.params.id);
         if (!quote) {
             return res.status(404).json({ message: 'Quote not found' });
         }
-        res.status(200).json(quote);
+
+        const ShipmentModel = mongoose.model( quoteDetails.shipmentType.toLowerCase() );
+        const detailsRec = await ShipmentModel.findByIdAndUpdate(
+            quoteDetails._id,
+            req.body,
+            { new: true }
+        );
+
+        await Quote.findByIdAndUpdate(
+            req.params.id,
+            { status: req.body.status },
+            { new: true }
+        );
+
+        notifyUser({
+            userId: req.body.clientId,
+            contentId: req.params.id,
+            referenceModel: "Quote",
+            content: "Your quote was edited !"
+        });
+
+        res.status(200).json({ message: 'Quote updated successfully', details: detailsRec });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// Delete Quote
+module.exports.deleteQuote = async (req, res) => {
+    try {
+        const quoteId = req.params.id;
+
+        const quote = await Quote.findById(quoteId);
+        if (!quote) {
+            return res.status(404).json({ message: 'Quote not found' });
+        }
+
+        await quote.deleteOne();
+        res.status(200).json({ message: 'Quote deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }

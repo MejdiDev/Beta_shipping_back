@@ -164,8 +164,6 @@ module.exports.deleteShipment = async (req, res) => {
     }
 };
 
-
-
 // Upload document
 module.exports.uploadDocument = async (req, res) => {
     try {

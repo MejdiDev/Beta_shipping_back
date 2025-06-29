@@ -113,6 +113,7 @@ exports.updateShipmentStatus = async (req, res) => {
         res.status(500).json({ message: 'Error updating shipment', error: error.message });
     }
 };
+
 // Delete shipment
 module.exports.deleteShipment = async (req, res) => {
     try {

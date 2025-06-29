@@ -23,6 +23,15 @@ exports.createTask = async (req, res) => {
 };
 
 // Get all tasks
+exports.getUserTasks = async (req, res) => {
+    try {
+        const tasks = await Task.find({ assignedTo: req.query.userId }).populate('assignedTo', 'name last');
+        res.status(200).json(tasks);
+    } catch (error) {
+        res.status(500).json({ message: 'Error retrieving tasks', error: error.message });
+    }
+};
+
 exports.getAllTasks = async (req, res) => {
     try {
         const tasks = await Task.find().populate('assignedTo', 'name last');
