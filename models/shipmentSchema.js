@@ -33,7 +33,12 @@ const shipmentSchema = new mongoose.Schema({
         type: String, 
         enum: ['created', 'in transit', 'delivered', 'delayed'],
         default: 'created' 
-    }
+    },
+
+    documents: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Document'
+    }]
 }, { timestamps: true });
 
 // Generate tracking number before saving

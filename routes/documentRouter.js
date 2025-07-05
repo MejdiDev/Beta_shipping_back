@@ -17,7 +17,7 @@ router.get(
 
 // Get operational documents for logged-in client
 router.get(
-  "/client/operational",
+  "/client/operational/:id",
   requireAuthUser, hasRole('client'),
   documentController.getClientOperationalDocuments
 );
@@ -62,14 +62,14 @@ router.get(
 // Download document (accessible by all authenticated users)
 router.get(
   "/download/:documentId",
-  requireAuthUser, hasRole('client', 'financialOfficer', 'operationalOfficer', 'admin'),
+  requireAuthUser, hasRole('client', 'operationalOfficer', 'admin'),
   documentController.downloadDocument
 );
 
 // Upload document route (financial and operational officers only)
 router.post(
   "/upload",
-  requireAuthUser, hasRole('financialOfficer', 'operationalOfficer'),
+  requireAuthUser, hasRole('financialOfficer', 'operationalOfficer', 'admin'),
   upload.single("document"),
   documentController.uploadDocument
 );

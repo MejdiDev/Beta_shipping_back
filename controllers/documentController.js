@@ -45,6 +45,17 @@ module.exports.uploadDocument = async (req, res) => {
         });
 
         const resDoc = await document.save();
+        const originalShip = await Shipment.findById(shipmentId);
+
+        console.log(shipmentId)
+
+        await Shipment.findByIdAndUpdate(
+            shipmentId,
+            {
+                documents: originalShip.documents ? [ ...originalShip.documents, resDoc._id ] : [ resDoc._id ]
+            },
+            { new: true }
+        );
 
         notifyUser({
             userId: clientId,
@@ -138,17 +149,21 @@ exports.getOperationalDocuments = async (req, res) => {
 exports.downloadDocument = async (req, res) => {
     try {
         const { documentId } = req.params;
+        const { userId } = req.query;
 
         const document = await Document.findById(documentId)
             .populate('shipmentId');
+
+        const userRole = await User.findById(documentId)
+            .select('role');
 
         if (!document) {
             return res.status(404).json({ message: 'Document not found' });
         }
 
         // Check permissions
-        if (req.user.role === 'client' && 
-            document.shipmentId.clientId.toString() !== req.user._id.toString()) {
+        if (userRole === 'client' &&
+            document.shipmentId.clientId !== userId) {
             return res.status(403).json({ message: 'Unauthorized to download this document' });
         }
 
@@ -159,7 +174,14 @@ exports.downloadDocument = async (req, res) => {
             return res.status(404).json({ message: 'File not found' });
         }
 
-        res.download(document.filePath, document.fileName);
+        const absoluteFilePath = path.resolve(document.filePath);
+
+        // Set headers for download
+        res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`);
+        res.setHeader('Content-Type', 'application/octet-stream');
+
+        // Send the file with the absolute path
+        res.sendFile(absoluteFilePath);
     } catch (error) {
         res.status(500).json({ message: 'Error downloading document', error: error.message });
     }
@@ -238,7 +260,7 @@ exports.getClientFinancialDocuments = async (req, res) => {
 exports.getClientOperationalDocuments = async (req, res) => {
     try {
         const documents = await Document.find({
-            clientId: req.user._id,
+            clientId: req.params.userId,
             documentCategory: 'operational'
         })
             .populate('uploadedBy', 'name email')

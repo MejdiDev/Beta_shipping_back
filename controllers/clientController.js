@@ -136,7 +136,7 @@ module.exports.getShipments = async (req, res) => {
 
 module.exports.getShipmentById = async (req, res) => {
   try {
-    const shipment = await Shipment.findOne({ _id: req.params.id });
+    const shipment = await Shipment.findOne({ _id: req.params.id })
     let resShip;
 
     if (!shipment) {
@@ -149,20 +149,19 @@ module.exports.getShipmentById = async (req, res) => {
             populate: {
                 path: 'detailsId'
             },
-        })
+        }).populate('documents')
     }
 
     else if(shipment.detailsId) {
-      resShip = await Shipment.findOne({ _id: req.params.id, detailsId: { $exists: true } }).populate('detailsId')
+        resShip = await Shipment.findOne({ _id: req.params.id, detailsId: { $exists: true } }).populate('detailsId').populate('documents')
     }
 
     res.status(200).json({
-        message: 'Client shipment retrieved successfully',
+        message: 'Shipment retrieved successfully',
         shipment: resShip
     });
-
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 

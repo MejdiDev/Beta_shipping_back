@@ -246,11 +246,11 @@ module.exports.getShipmentById = async (req, res) => {
                 populate: {
                     path: 'detailsId'
                 },
-            })
+            }).populate('documents')
         }
 
         else if(shipment.detailsId) {
-            resShip = await Shipment.findOne({ _id: req.params.id, detailsId: { $exists: true } }).populate('detailsId')
+            resShip = await Shipment.findOne({ _id: req.params.id, detailsId: { $exists: true } }).populate('detailsId').populate('documents')
         }
 
         res.status(200).json({
